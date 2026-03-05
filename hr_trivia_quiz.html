@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HR & Workplace Trivia Quiz</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a237e 0%, #283593 40%, #3949ab 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 700px;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #1a237e, #3949ab);
+      color: white;
+      padding: 28px 32px 20px;
+      text-align: center;
+    }
+    .header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .header p  { font-size: 13px; opacity: 0.8; }
+
+    /* PROGRESS BAR */
+    .progress-wrap { padding: 16px 32px 0; }
+    .progress-info {
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: #555; margin-bottom: 6px;
+    }
+    .progress-bar-bg { background: #e0e0e0; border-radius: 8px; height: 8px; overflow: hidden; }
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #1a237e, #5c6bc0);
+      height: 100%; border-radius: 8px; transition: width 0.4s ease;
+    }
+
+    /* TIMER */
+    .timer-wrap { padding: 12px 32px 0; display: flex; align-items: center; gap: 8px; }
+    .timer-label { font-size: 13px; color: #777; }
+    .timer-bar-bg { flex: 1; background: #e0e0e0; border-radius: 8px; height: 10px; overflow: hidden; }
+    .timer-bar-fill { height: 100%; border-radius: 8px; background: #43a047; transition: width 0.9s linear, background 0.3s; }
+    .timer-count { font-size: 14px; font-weight: 700; color: #333; min-width: 24px; text-align: right; }
+
+    /* QUESTION */
+    .question-area { padding: 28px 32px 16px; }
+    .question-number { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .question-text { font-size: 20px; font-weight: 600; color: #1a237e; line-height: 1.5; min-height: 60px; }
+
+    /* CHOICES */
+    .choices { padding: 8px 32px 28px; display: flex; flex-direction: column; gap: 12px; }
+    .choice-btn {
+      background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 12px;
+      padding: 14px 18px; font-size: 15px; color: #333; text-align: left;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: #3949ab; background: #e8eaf6; transform: translateX(4px); }
+    .choice-letter {
+      width: 30px; height: 30px; border-radius: 50%; background: #e0e0e0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0; transition: background 0.2s;
+    }
+    .choice-btn.correct { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
+    .choice-btn.correct .choice-letter { background: #43a047; color: white; }
+    .choice-btn.wrong   { border-color: #c62828; background: #ffebee; color: #b71c1c; }
+    .choice-btn.wrong   .choice-letter { background: #e53935; color: white; }
+    .choice-btn:disabled { cursor: default; transform: none; }
+
+    /* FEEDBACK */
+    .feedback {
+      margin: 0 32px 20px; padding: 12px 16px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 8px;
+    }
+    .feedback.correct { background: #e8f5e9; color: #1b5e20; border-left: 4px solid #43a047; }
+    .feedback.wrong   { background: #ffebee; color: #b71c1c; border-left: 4px solid #e53935; }
+    .feedback .icon   { font-size: 18px; }
+
+    /* NEXT BUTTON */
+    .next-wrap { padding: 0 32px 28px; display: none; justify-content: flex-end; }
+    .next-btn {
+      background: linear-gradient(135deg, #1a237e, #3949ab); color: white;
+      border: none; border-radius: 10px; padding: 12px 28px; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.2s;
+    }
+    .next-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* SCORE STRIP */
+    .score-strip {
+      background: #f5f5f5; padding: 10px 32px;
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: #555; border-top: 1px solid #e0e0e0;
+    }
+    .score-strip span b { color: #1a237e; }
+
+    /* SCREENS */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===== START SCREEN ===== */
+    #start-screen { padding: 40px 32px; text-align: center; }
+    .start-icon { font-size: 60px; margin-bottom: 16px; }
+    #start-screen h2 { font-size: 26px; color: #1a237e; margin-bottom: 10px; }
+    #start-screen p { color: #666; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+
+    .start-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 28px; }
+    .stat-box { background: #e8eaf6; border-radius: 12px; padding: 14px 20px; text-align: center; }
+    .stat-box .num { font-size: 24px; font-weight: 700; color: #1a237e; }
+    .stat-box .lbl { font-size: 12px; color: #777; margin-top: 2px; }
+
+    /* NAME INPUT */
+    .name-input-wrap { margin-bottom: 24px; }
+    .name-input-wrap label { display: block; font-size: 14px; font-weight: 600; color: #444; margin-bottom: 8px; }
+    .name-input-wrap input {
+      width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 10px;
+      font-size: 15px; color: #333; outline: none; transition: border-color 0.2s;
+      text-align: center;
+    }
+    .name-input-wrap input:focus { border-color: #3949ab; }
+
+    .start-btn {
+      background: linear-gradient(135deg, #1a237e, #3949ab); color: white;
+      border: none; border-radius: 12px; padding: 16px 48px; font-size: 17px;
+      font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
+      margin-right: 12px;
+    }
+    .start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,35,126,0.35); }
+
+    .leaderboard-btn {
+      background: transparent; color: #3949ab; border: 2px solid #3949ab;
+      border-radius: 12px; padding: 14px 24px; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .leaderboard-btn:hover { background: #e8eaf6; }
+
+    /* ===== QUIZ SCREEN ===== */
+    #quiz-screen { display: none; }
+    #quiz-screen.active { display: block; }
+
+    /* ===== RESULT SCREEN ===== */
+    #result-screen { padding: 36px 32px; text-align: center; }
+    .result-icon { font-size: 64px; margin-bottom: 16px; }
+    #result-screen h2 { font-size: 28px; color: #1a237e; margin-bottom: 8px; }
+    .result-sub { font-size: 15px; color: #666; margin-bottom: 24px; }
+
+    .score-display {
+      background: linear-gradient(135deg, #1a237e, #3949ab); border-radius: 16px;
+      color: white; padding: 24px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: center; gap: 32px;
+    }
+    .score-display .big-num  { font-size: 56px; font-weight: 800; line-height: 1; }
+    .score-display .big-denom{ font-size: 22px; opacity: 0.7; margin-top: 8px; }
+    .score-display .big-pct  { font-size: 36px; font-weight: 700; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 32px; }
+
+    .result-breakdown { display: flex; justify-content: center; gap: 16px; margin-bottom: 20px; }
+    .breakdown-box { border-radius: 10px; padding: 12px 20px; text-align: center; flex: 1; }
+    .breakdown-box.correct-box { background: #e8f5e9; color: #1b5e20; }
+    .breakdown-box.wrong-box   { background: #ffebee; color: #b71c1c; }
+    .breakdown-box .b-num { font-size: 26px; font-weight: 800; }
+    .breakdown-box .b-lbl { font-size: 12px; font-weight: 600; }
+
+    .grade-bar { background: #e0e0e0; border-radius: 20px; height: 14px; overflow: hidden; margin-bottom: 8px; }
+    .grade-bar-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #1a237e, #5c6bc0); transition: width 1s ease; }
+    .grade-label { font-size: 14px; font-weight: 700; color: #1a237e; margin-bottom: 12px; }
+    .result-msg { font-size: 15px; color: #555; margin-bottom: 24px; line-height: 1.6; }
+
+    .result-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .restart-btn {
+      background: linear-gradient(135deg, #1a237e, #3949ab); color: white;
+      border: none; border-radius: 12px; padding: 14px 32px; font-size: 15px;
+      font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .restart-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,35,126,0.35); }
+    .view-lb-btn {
+      background: transparent; color: #3949ab; border: 2px solid #3949ab;
+      border-radius: 12px; padding: 12px 24px; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .view-lb-btn:hover { background: #e8eaf6; }
+
+    /* ===== LEADERBOARD SCREEN ===== */
+    #leaderboard-screen { padding: 36px 32px; }
+    #leaderboard-screen h2 { font-size: 24px; color: #1a237e; margin-bottom: 4px; text-align: center; }
+    .lb-sub { font-size: 13px; color: #888; margin-bottom: 24px; text-align: center; }
+
+    .lb-table-wrap { overflow-x: auto; margin-bottom: 24px; }
+    table.lb-table {
+      width: 100%; border-collapse: collapse; font-size: 14px;
+    }
+    .lb-table thead tr { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; }
+    .lb-table th { padding: 12px 14px; text-align: left; font-weight: 600; font-size: 13px; }
+    .lb-table td { padding: 11px 14px; border-bottom: 1px solid #f0f0f0; color: #333; vertical-align: middle; }
+    .lb-table tbody tr:hover { background: #f5f7ff; }
+    .lb-table tbody tr:nth-child(1) td { background: #fffde7; }
+    .lb-table tbody tr:nth-child(2) td { background: #fafafa; }
+    .lb-table tbody tr:nth-child(3) td { background: #fff8f0; }
+
+    .rank-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: 13px;
+    }
+    .rank-1 { background: #ffd700; color: #7b5800; }
+    .rank-2 { background: #c0c0c0; color: #444; }
+    .rank-3 { background: #cd7f32; color: #fff; }
+    .rank-other { background: #e0e0e0; color: #555; }
+
+    .pct-pill {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-weight: 700; font-size: 13px;
+    }
+    .pct-high { background: #e8f5e9; color: #2e7d32; }
+    .pct-mid  { background: #fff3e0; color: #e65100; }
+    .pct-low  { background: #ffebee; color: #c62828; }
+
+    .empty-lb { text-align: center; padding: 40px 20px; color: #bbb; font-size: 15px; }
+    .empty-lb .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+    .lb-back-btn {
+      display: block; margin: 0 auto; background: linear-gradient(135deg, #1a237e, #3949ab);
+      color: white; border: none; border-radius: 12px; padding: 12px 36px;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .lb-back-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(26,35,126,0.3); }
+
+    .lb-clear-btn {
+      display: block; margin: 10px auto 0; background: transparent; color: #e53935;
+      border: none; font-size: 13px; cursor: pointer; text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="start-screen" class="screen active">
+    <div class="start-icon">🏢</div>
+    <h2>HR & Workplace Trivia</h2>
+    <p>Test your knowledge on HR fundamentals, workplace policies, labor practices, and employee relations.</p>
+    <div class="start-stats">
+      <div class="stat-box"><div class="num">10</div><div class="lbl">Questions</div></div>
+      <div class="stat-box"><div class="num">15s</div><div class="lbl">Per Question</div></div>
+      <div class="stat-box"><div class="num">Easy</div><div class="lbl">Difficulty</div></div>
+    </div>
+    <div class="name-input-wrap">
+      <label for="player-name">👤 Enter your name to track your score:</label>
+      <input type="text" id="player-name" placeholder="e.g. Alex" maxlength="30" />
+    </div>
+    <button class="start-btn" onclick="startQuiz()">▶ Start Quiz</button>
+    <button class="leaderboard-btn" onclick="showLeaderboard('start')">🏆 Leaderboard</button>
+  </div>
+
+  <!-- ===== QUIZ SCREEN ===== -->
+  <div id="quiz-screen">
+    <div class="header">
+      <div class="badge">HR & Workplace Trivia</div>
+      <h1>HR Knowledge Challenge</h1>
+      <p>Choose the best answer for each question</p>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="q-label">Question 1 of 10</span>
+        <span id="score-label">Score: 0</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill" style="width:10%"></div>
+      </div>
+    </div>
+
+    <div class="timer-wrap">
+      <span class="timer-label">⏱</span>
+      <div class="timer-bar-bg">
+        <div class="timer-bar-fill" id="timer-fill" style="width:100%"></div>
+      </div>
+      <div class="timer-count" id="timer-count">15</div>
+    </div>
+
+    <div class="question-area">
+      <div class="question-number" id="q-num">QUESTION 1</div>
+      <div class="question-text" id="q-text"></div>
+    </div>
+
+    <div class="choices" id="choices"></div>
+
+    <div class="feedback" id="feedback">
+      <span class="icon" id="fb-icon"></span>
+      <span id="fb-text"></span>
+    </div>
+
+    <div class="next-wrap" id="next-wrap">
+      <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next →</button>
+    </div>
+
+    <div class="score-strip">
+      <span>✅ Correct: <b id="strip-correct">0</b></span>
+      <span>❌ Wrong: <b id="strip-wrong">0</b></span>
+      <span>⏭ Skipped: <b id="strip-skipped">0</b></span>
+    </div>
+  </div>
+
+  <!-- ===== RESULT SCREEN ===== -->
+  <div id="result-screen" class="screen">
+    <div class="result-icon" id="result-icon">🏆</div>
+    <h2 id="result-title">Quiz Complete!</h2>
+    <div class="result-sub" id="result-sub">Here's how you did:</div>
+    <div class="score-display">
+      <div>
+        <div class="big-num" id="res-score">0</div>
+        <div class="big-denom" id="res-denom">out of 10</div>
+      </div>
+      <div class="big-pct" id="res-pct">0%</div>
+    </div>
+    <div class="result-breakdown">
+      <div class="breakdown-box correct-box">
+        <div class="b-num" id="res-correct">0</div>
+        <div class="b-lbl">✅ Correct</div>
+      </div>
+      <div class="breakdown-box wrong-box">
+        <div class="b-num" id="res-wrong">0</div>
+        <div class="b-lbl">❌ Wrong / Skipped</div>
+      </div>
+    </div>
+    <div class="grade-bar">
+      <div class="grade-bar-fill" id="grade-fill" style="width:0%"></div>
+    </div>
+    <div class="grade-label" id="grade-label"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-btns">
+      <button class="restart-btn" onclick="restartQuiz()">🔄 Play Again</button>
+      <button class="view-lb-btn" onclick="showLeaderboard('result')">🏆 View Leaderboard</button>
+    </div>
+  </div>
+
+  <!-- ===== LEADERBOARD SCREEN ===== -->
+  <div id="leaderboard-screen" class="screen">
+    <h2>🏆 Leaderboard</h2>
+    <div class="lb-sub">Top scores from this session — ranked by score</div>
+    <div class="lb-table-wrap" id="lb-table-wrap"></div>
+    <button class="lb-back-btn" id="lb-back-btn" onclick="backFromLeaderboard()">← Back</button>
+    <button class="lb-clear-btn" onclick="clearLeaderboard()">Clear all scores</button>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    q: "What does 'HRIS' stand for?",
+    choices: ["Human Resources Information System", "Human Resources Integrated Software", "HR Intelligence & Reporting Interface", "HR Internal Resource Index"],
+    answer: 0,
+    explanation: "HRIS stands for Human Resources Information System — software used to manage employee data and HR processes."
+  },
+  {
+    q: "Which document is typically given to a new employee on their first day that outlines company rules and expectations?",
+    choices: ["Job Description", "Employment Contract", "Employee Handbook", "Performance Appraisal Form"],
+    answer: 2,
+    explanation: "The Employee Handbook outlines company policies, rules, benefits, and expectations for employees."
+  },
+  {
+    q: "What is 'onboarding' in HR?",
+    choices: ["The process of terminating an employee", "The process of integrating a new employee into the organization", "A type of employee performance review", "A method for calculating payroll"],
+    answer: 1,
+    explanation: "Onboarding refers to the process of helping new hires acclimate to their role and the company culture."
+  },
+  {
+    q: "What is a '201 File' in HR?",
+    choices: ["A disciplinary form filed with DOLE", "The employee's complete personal employment record", "A monthly payroll computation sheet", "An ID number format in HRIS"],
+    answer: 1,
+    explanation: "A 201 File is the official personnel folder containing all documents related to an employee's employment history."
+  },
+  {
+    q: "What does 'KPI' stand for in performance management?",
+    choices: ["Key Personnel Index", "Key Performance Indicator", "Knowledge and Productivity Index", "Key Payroll Information"],
+    answer: 1,
+    explanation: "KPI stands for Key Performance Indicator — measurable values that show how effectively employees or organizations meet objectives."
+  },
+  {
+    q: "In Philippine labor law, what is the standard number of working days in a week?",
+    choices: ["4 days", "5 days", "6 days", "7 days"],
+    answer: 2,
+    explanation: "Under the Philippine Labor Code, the standard work week is 6 days, though many companies operate on a 5-day workweek."
+  },
+  {
+    q: "What is 'tardiness' in timekeeping?",
+    choices: ["Leaving work early without permission", "Arriving at work later than the scheduled start time", "Being absent without prior notice", "Failing to log out from the biometric system"],
+    answer: 1,
+    explanation: "Tardiness refers to arriving at work after the scheduled start time, which is tracked in timekeeping records."
+  },
+  {
+    q: "Which government agency in the Philippines handles labor and employment concerns?",
+    choices: ["DOLE (Department of Labor and Employment)", "SSS (Social Security System)", "CHED (Commission on Higher Education)", "DTI (Department of Trade and Industry)"],
+    answer: 0,
+    explanation: "DOLE is the primary agency overseeing labor and employment matters in the Philippines."
+  },
+  {
+    q: "What is the purpose of an exit interview in HR?",
+    choices: ["To test a job candidate's skills before hiring", "To gather feedback from employees who are leaving the company", "To evaluate a new employee's performance after 3 months", "To review an employee's attendance record"],
+    answer: 1,
+    explanation: "An exit interview is conducted when an employee resigns or leaves, to gather feedback and identify areas for organizational improvement."
+  },
+  {
+    q: "What is 'payroll' in HR?",
+    choices: ["The process of recruiting new employees", "The list of a company's employees and the amount of money they are to be paid", "The schedule of employee shifts and duties", "The employee's benefits and leave records"],
+    answer: 1,
+    explanation: "Payroll refers to the list of employees and their corresponding compensation, including wages, deductions, and benefits."
+  }
+];
+
+// In-memory leaderboard (persists as long as the browser tab is open)
+let leaderboard = [];
+let lbReturnScreen = 'start';
+
+let currentQ = 0, score = 0, correct = 0, wrong = 0, skipped = 0;
+let timer = null, timeLeft = 15, answered = false;
+let playerName = '';
+
+function startQuiz() {
+  const nameInput = document.getElementById('player-name').value.trim();
+  playerName = nameInput || 'Anonymous';
+
+  document.getElementById('start-screen').classList.remove('active');
+  document.getElementById('quiz-screen').style.display = 'block';
+  currentQ = 0; score = 0; correct = 0; wrong = 0; skipped = 0;
+  updateStrip();
+  loadQuestion();
+}
+
+function updateStrip() {
+  document.getElementById('strip-correct').textContent = correct;
+  document.getElementById('strip-wrong').textContent   = wrong;
+  document.getElementById('strip-skipped').textContent = skipped;
+}
+
+function loadQuestion() {
+  answered = false;
+  timeLeft = 15;
+  const q = questions[currentQ];
+
+  document.getElementById('q-num').textContent   = `QUESTION ${currentQ + 1}`;
+  document.getElementById('q-text').textContent  = q.q;
+  document.getElementById('q-label').textContent = `Question ${currentQ + 1} of ${questions.length}`;
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+  document.getElementById('progress-fill').style.width = `${((currentQ + 1) / questions.length) * 100}%`;
+  document.getElementById('timer-count').textContent   = timeLeft;
+  document.getElementById('timer-fill').style.width    = '100%';
+  document.getElementById('timer-fill').style.background = '#43a047';
+  document.getElementById('feedback').style.display   = 'none';
+  document.getElementById('next-wrap').style.display  = 'none';
+
+  const letters = ['A','B','C','D'];
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
+  q.choices.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-letter">${letters[i]}</span> ${choice}`;
+    btn.onclick = () => selectAnswer(i);
+    choicesDiv.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timer-count').textContent = timeLeft;
+    const pct = (timeLeft / 15) * 100;
+    document.getElementById('timer-fill').style.width = pct + '%';
+    if (pct < 40)      document.getElementById('timer-fill').style.background = '#e53935';
+    else if (pct < 70) document.getElementById('timer-fill').style.background = '#fb8c00';
+    if (timeLeft <= 0) { clearInterval(timer); if (!answered) timeUp(); }
+  }, 1000);
+}
+
+function timeUp() {
+  answered = true; skipped++;
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach(b => b.disabled = true);
+  btns[questions[currentQ].answer].classList.add('correct');
+  showFeedback(false, `⏰ Time's up! The correct answer was: ${questions[currentQ].choices[questions[currentQ].answer]}`);
+  updateStrip(); showNext();
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timer);
+  const q = questions[currentQ];
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach(b => b.disabled = true);
+
+  if (idx === q.answer) {
+    score++; correct++;
+    btns[idx].classList.add('correct');
+    showFeedback(true, `✅ Correct! ${q.explanation}`);
+  } else {
+    wrong++;
+    btns[idx].classList.add('wrong');
+    btns[q.answer].classList.add('correct');
+    showFeedback(false, `❌ Incorrect. ${q.explanation}`);
+  }
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+  updateStrip(); showNext();
+}
+
+function showFeedback(isCorrect, text) {
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+  document.getElementById('fb-icon').textContent = isCorrect ? '💡' : '📖';
+  document.getElementById('fb-text').textContent = text;
+  fb.style.display = 'flex';
+}
+
+function showNext() {
+  const nw = document.getElementById('next-wrap');
+  nw.style.display = 'flex';
+  document.getElementById('next-btn').textContent =
+    currentQ < questions.length - 1 ? 'Next →' : 'See Results 🏆';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ < questions.length) { loadQuestion(); }
+  else { showResults(); }
+}
+
+function showResults() {
+  clearInterval(timer);
+  document.getElementById('quiz-screen').style.display = 'none';
+
+  const pct = Math.round((score / questions.length) * 100);
+  document.getElementById('res-score').textContent   = score;
+  document.getElementById('res-denom').textContent   = `out of ${questions.length}`;
+  document.getElementById('res-pct').textContent     = pct + '%';
+  document.getElementById('res-correct').textContent = correct;
+  document.getElementById('res-wrong').textContent   = wrong + skipped;
+
+  let icon, title, msg, grade;
+  if (pct >= 90)      { icon='🏆'; title='Outstanding!';    grade='Excellent — HR Expert!';      msg='Perfect score territory! You have exceptional HR knowledge.'; }
+  else if (pct >= 70) { icon='🌟'; title='Great Job!';      grade='Very Good — HR Pro!';         msg='Solid HR knowledge! A little more review and you\'ll be at the top!'; }
+  else if (pct >= 50) { icon='👍'; title='Good Effort!';    grade='Passing — Keep Learning!';    msg='You\'re on the right track. Reviewing HR fundamentals will help further.'; }
+  else                { icon='📚'; title='Keep Practicing!'; grade='Needs Improvement';          msg='Don\'t be discouraged! Every HR expert started somewhere. Try again!'; }
+
+  document.getElementById('result-icon').textContent  = icon;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-sub').textContent   = `${playerName} scored ${score} out of ${questions.length}`;
+  document.getElementById('grade-label').textContent  = grade;
+  document.getElementById('result-msg').textContent   = msg;
+
+  const rs = document.getElementById('result-screen');
+  rs.classList.add('active');
+  setTimeout(() => { document.getElementById('grade-fill').style.width = pct + '%'; }, 300);
+
+  // Save to leaderboard
+  leaderboard.push({
+    name: playerName,
+    score: score,
+    total: questions.length,
+    pct: pct,
+    date: new Date().toLocaleString('en-PH', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+  });
+  leaderboard.sort((a, b) => b.score - a.score || b.pct - a.pct);
+}
+
+function showLeaderboard(from) {
+  lbReturnScreen = from;
+  if (from === 'start') {
+    document.getElementById('start-screen').classList.remove('active');
+  } else if (from === 'result') {
+    document.getElementById('result-screen').classList.remove('active');
+  }
+  renderLeaderboard();
+  document.getElementById('leaderboard-screen').classList.add('active');
+}
+
+function renderLeaderboard() {
+  const wrap = document.getElementById('lb-table-wrap');
+  if (leaderboard.length === 0) {
+    wrap.innerHTML = `<div class="empty-lb"><div class="empty-icon">🏆</div><p>No scores yet.<br>Play the quiz to appear here!</p></div>`;
+    return;
+  }
+  const medals = ['rank-1','rank-2','rank-3'];
+  let rows = leaderboard.map((entry, i) => {
+    const rankClass = i < 3 ? medals[i] : 'rank-other';
+    const rankEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+    const pctClass  = entry.pct >= 70 ? 'pct-high' : entry.pct >= 50 ? 'pct-mid' : 'pct-low';
+    return `<tr>
+      <td><span class="rank-badge ${rankClass}">${rankEmoji}</span></td>
+      <td><strong>${entry.name}</strong></td>
+      <td>${entry.score} / ${entry.total}</td>
+      <td><span class="pct-pill ${pctClass}">${entry.pct}%</span></td>
+      <td style="color:#999;font-size:12px">${entry.date}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="lb-table">
+    <thead><tr>
+      <th>#</th><th>Player</th><th>Score</th><th>Percentage</th><th>Date</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function backFromLeaderboard() {
+  document.getElementById('leaderboard-screen').classList.remove('active');
+  if (lbReturnScreen === 'result') {
+    document.getElementById('result-screen').classList.add('active');
+  } else {
+    document.getElementById('start-screen').classList.add('active');
+  }
+}
+
+function clearLeaderboard() {
+  if (confirm('Clear all leaderboard scores?')) {
+    leaderboard = [];
+    renderLeaderboard();
+  }
+}
+
+function restartQuiz() {
+  document.getElementById('result-screen').classList.remove('active');
+  document.getElementById('grade-fill').style.width = '0%';
+  currentQ = 0; score = 0; correct = 0; wrong = 0; skipped = 0;
+  updateStrip();
+  document.getElementById('quiz-screen').style.display = 'block';
+  loadQuestion();
+}
+</script>
+</body>
+</html>
